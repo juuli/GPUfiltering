@@ -77,13 +77,13 @@ bool PortAudioClass::openStream() {
     return false;
 
   ret = paCheck(Pa_OpenStream(&(this->stream_),
-						                  &(input_params),
+                              &(input_params),
 						                  &(output_params),
 						                  this->getFs(),
 						                  this->getFramesPerBuffer(),
-				                  		0, // paClipOff 
-				    	              	this->callback_,
-				                  		&(this->callback_data_))); // user data
+				                      0, // paClipOff 
+                              this->callback_,
+                              &(this->callback_data_))); // user data
   return ret;
 }
 
