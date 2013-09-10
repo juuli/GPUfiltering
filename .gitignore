@@ -1,5 +1,18 @@
-/matlab/meshes
+/lib/
+/CMakeFiles
+/src/CMakeFiles
+/bin
 
+/src/MakeFile
+MakeFile
+
+
+response.tx
+solver_log.txt
+*.cmake
+*.la
+*.a
+*.swp
 *.exe
 *.opensdf
 *.sdf
