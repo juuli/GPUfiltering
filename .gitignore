@@ -4,9 +4,8 @@
 /src/CMakeFiles
 /bin
 
-
 MakeFile
-response.tx
+response.txt
 solver_log.txt
 
 *.cmake
@@ -19,7 +18,6 @@ solver_log.txt
 *.pdb
 *.obj
 *.log
-*.txt
 *.wav
 *.mexw64
 *.lib
@@ -42,6 +40,5 @@ solver_log.txt
 *.lai
 *.la
 *.a
-
 
 
