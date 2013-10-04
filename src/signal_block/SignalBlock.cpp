@@ -2,12 +2,12 @@
 
 #include "SignalBlock.h"
 
-fftw_complex* multiply(fftw_complex* a, fftw_complex* b, fftw_complex* c) {
+void multiply(fftw_complex* a, fftw_complex* b, fftw_complex* c) {
   (*c)[0] = (*a)[0]*(*b)[0]-(*a)[1]*(*b)[1];
   (*c)[1] = (*a)[0]*(*b)[1]+(*a)[1]*(*b)[0];
 }
 
-fftw_complex* divide(fftw_complex* a, fftw_complex* b, fftw_complex* c) {
+void divide(fftw_complex* a, fftw_complex* b, fftw_complex* c) {
   double denum = 1/((*b)[0]*(*b)[0]+(*b)[1]*(*b)[1]); // c^2 + d^2
   double real_num = (*a)[0]*(*b)[0]+(*a)[1]*(*b)[1]; // ac + bd 
   double imag_num = (*a)[1]*(*b)[0]-(*a)[0]*(*b)[1]; // bc - ad

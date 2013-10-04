@@ -1,5 +1,5 @@
 #include "FilterBlock.h"
-#include "../logger.h"
+
 
 
 void FilterBlock::setNumInAndOutputs(int num_inputs, int num_outputs) {
@@ -23,7 +23,7 @@ void FilterBlock::setNumInAndOutputs(int num_inputs, int num_outputs) {
         int past_filter_idx = i*past_num_inputs+j;
         this->setFilterTaps(i,j, past_taps.at(past_filter_idx));
       }
-    } // end j loop
+     } // end j loop
   } // end i loop
 } // end function
 
@@ -35,7 +35,6 @@ void FilterBlock::setFilterTaps(int input, int output, std::vector<float>& taps)
 
   log_msg<LOG_INFO>(L"FilterBlock::setFilterTaps - in %d, out %d, num taps %d")
                     %input % output %taps.size();
-
 
   if(input > this->num_inputs_){
     log_msg<LOG_INFO>(L"FilterBlock::setFilterTaps - invalid input %d, number of inputs %d")
@@ -50,11 +49,13 @@ void FilterBlock::setFilterTaps(int input, int output, std::vector<float>& taps)
 
   }
 
-
-
   int filter_idx = this->getFilterIndex(input, output);
   int taps_size = taps.size();
   int filter_len = this->getFilterLen();
+    
+  int used_taps = taps_size;
+  if(FIXED_FILTER)
+    used_taps = filter_len;
 
   if(filter_len < taps_size)
     this->filter_taps_.at(filter_idx).resize(taps_size, 0.f);
@@ -68,9 +69,9 @@ void FilterBlock::setFilterTaps(int input, int output, std::vector<float>& taps)
   }
 }
 
-
 float* FilterBlock::getFilterTaps(int input, int output) {
   int filter_idx = this->getFilterIndex(input, output);
   float* ret = &(this->filter_taps_.at(filter_idx)[0]);
-
+  
+  return ret;
 }

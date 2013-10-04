@@ -23,8 +23,8 @@ enum log_level {
 class Logger {
 public:
 	Logger(log_level level, const wchar_t* msg )
-	: fmt_(msg),
-	  level_(level),
+	: level_(level),
+    fmt_(msg),
 	  logfile_("solver_log.txt",  std::fstream::out | std::fstream::app)
 	  {};
 

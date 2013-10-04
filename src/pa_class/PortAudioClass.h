@@ -1,8 +1,8 @@
 #ifndef PORT_AUDIO_CLASS_H
 #define PORT_AUDIO_CLASS_H
 
+#include "../global_includes.h"
 #include "../includes/portaudio.h"
-#include "../logger.h"
 #include <fstream>
 #include <string>
 
@@ -10,10 +10,10 @@
 bool paCheck(PaError err);
 
 typedef int (*PaClassCallback)(const void *inputBuffer, void *outputBuffer,
-						                   unsigned long framesPerBuffer,
-						                   const PaStreamCallbackTimeInfo* timeInfo,
-						                   PaStreamCallbackFlags statusFlags,
-						                   void *userData);
+                               unsigned long framesPerBuffer,
+                               const PaStreamCallbackTimeInfo* timeInfo,
+                               PaStreamCallbackFlags statusFlags,
+                               void *userData);
 
 typedef struct callback_struct_t{
   float* output_samples;
@@ -64,10 +64,10 @@ static int playRecCallback(const void *inputBuffer, void *outputBuffer,
 
 // Callback which fetches input samples and passes them to output
 static int inputdataCallback(const void *inputBuffer, void *outputBuffer,
-						               unsigned long frames_per_buffer,
-						               const PaStreamCallbackTimeInfo* timeInfo,
-						               PaStreamCallbackFlags statusFlags,
-						               void *user_data) {
+						                 unsigned long frames_per_buffer,
+						                 const PaStreamCallbackTimeInfo* timeInfo,
+						                 PaStreamCallbackFlags statusFlags,
+						                 void *user_data) {
     float *out = (float*)outputBuffer;
     const float *in = (const float*)inputBuffer;
 		(void) statusFlags;
@@ -95,11 +95,10 @@ static int outputdataCallback(const void *inputBuffer, void *outputBuffer,
 						               unsigned long frames_per_buffer,
 						               const PaStreamCallbackTimeInfo* timeInfo,
 						               PaStreamCallbackFlags statusFlags,
-						               void *user_data )
-{
+						               void *user_data ) {
     float *out = (float*)outputBuffer;
-    const float *in = (const float*)inputBuffer;
-		
+    (void*)inputBuffer;
+	  	
     callback_struct* output_data = (callback_struct*)user_data;
     
     int start_idx = output_data->current_frame*frames_per_buffer;
@@ -133,7 +132,7 @@ static int defaultCallback(const void *inputBuffer, void *outputBuffer,
 						               void *userData )
 {
     float *out = (float*)outputBuffer;
-    const float *in = (const float*)inputBuffer;
+    (void*)inputBuffer;
 		
     unsigned int i;
     (void) timeInfo; /* Prevent unused variable warnings. */
@@ -235,7 +234,7 @@ public:
   bool openStream();  
   bool closeStream();
   bool startStream();
-  bool setupCallbackBlock();
+  bool setupSweepCallbackBlock();
 };
 
 

@@ -150,7 +150,7 @@ void PortAudioClass::setFramesPerBuffer(unsigned long fpb) {
   this->frames_per_buffer_ = fpb;
 }
 
-bool PortAudioClass::setupCallbackBlock() {  
+bool PortAudioClass::setupSweepCallbackBlock() {  
   int data_size = this->output_data_.size();
   int num_frames = data_size/this->getFramesPerBuffer();
   
@@ -183,7 +183,7 @@ bool PortAudioClass::setupCallbackBlock() {
   this->callback_data_.input_channel = this->getCurrentInputChannel();
   this->callback_data_.num_input_channels = this->getNumInputChannels();
   this->callback_data_.num_output_channels = this->getNumOutputChannels();
-  log_msg<LOG_INFO>(L"PortAudioClass::setupCallbackBlock - \n"
+  log_msg<LOG_INFO>(L"PortAudioClass::setupSweepCallbackBlock - \n"
                     "____________________________\n"
                     "Number of frames assigned %d \n"
                     "Output Channel %d \n"

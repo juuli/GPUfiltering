@@ -29,28 +29,16 @@ int main(void) {
   SignalBlock sb;  
   FilterBlock fb;
 
-
-  fb.setNumInAndOutputs(3,3);
-
+  fb.setNumInAndOutputs(2,2);
   std::vector<float> filter1(10);
   filter1.at(1) = 1;
   
-  std::vector<float> filter2(10);
-  filter2.at(2) = 1;
+  std::vector<float> filter2(512);
+  filter2.at(480) = 1;
 
 
-  fb.setFilterTaps(0,0, filter1);
-  fb.setFilterTaps(2,1, filter2);
-  
-  float* f_ptr = fb.getFilterTaps(2,1);
-  for(int i = 0; i < 10; i++)
-    printf("tap %d : %f\n", i, f_ptr[i]);
-
-  fb.setNumInAndOutputs(4,3);
-  f_ptr = fb.getFilterTaps(2,1);
-  for(int i = 0; i < 10; i++)
-    printf("tap %d : %f\n", i, f_ptr[i]);
-
+  fb.setFilterTaps(0,0, filter1); // left to left
+  fb.setFilterTaps(1,1, filter2); // right to right
 
   //pa.initialize();
   // for(int i = 0; i < pa.getNumberOfDevices(); i++)

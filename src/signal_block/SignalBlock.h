@@ -1,7 +1,16 @@
 #ifndef SIGNAL_BLOCK_H
 #define SINGAL_BLOCK_H
 
-#include "../logger.h"
+
+/* SignalBlock class generates and analyzes signals
+
+ Currently the class has functionality to generate 
+ and analyze swept sine excitation with fftw library
+ for impulse response measurement
+ 
+*/
+
+#include "../global_includes.h"
 #include <vector>
 #include <cmath>
 #include <algorithm>
