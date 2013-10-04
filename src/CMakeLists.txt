@@ -9,7 +9,7 @@
 SET(PA_SOURCES ./pa_devs.c)
 SET(SOURCES_ ${PA_SOURCES})
 
-SET(CMAKE_CXX_FLAGS "-Wall -Wextra")
+#SET(CMAKE_CXX_FLAGS "-Wall -Wextra")
 
 #CUDA STUFF
 SET(CUDA_PATH "/usr/local/cuda/")

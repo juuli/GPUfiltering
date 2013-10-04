@@ -1,5 +1,7 @@
 #include "PortAudioClass.h"
 
+static FilterBlock* filter_block;
+
 // PortAudio error check routine
 bool paCheck(PaError err) {
   if(err != 0) {
@@ -83,7 +85,7 @@ bool PortAudioClass::openStream() {
                               this->getFramesPerBuffer(),
                               0, // paClipOff 
                               this->callback_,
-                              &(this->callback_data_))); // user data
+                              &(this->callback_data_ptr_))); // user data
   return ret;
 }
 
@@ -150,10 +152,11 @@ void PortAudioClass::setFramesPerBuffer(unsigned long fpb) {
   this->frames_per_buffer_ = fpb;
 }
 
-bool PortAudioClass::setupSweepCallbackBlock() {  
+CallbackStruct PortAudioClass::setupSweepCallbackBlock() {  
   int data_size = this->output_data_.size();
   int num_frames = data_size/this->getFramesPerBuffer();
   
+
   if(data_size%this->getFramesPerBuffer() != 0) {
     int reminder = data_size-(num_frames*this->getFramesPerBuffer());
     reminder = this->getFramesPerBuffer()-reminder;
@@ -174,15 +177,16 @@ bool PortAudioClass::setupSweepCallbackBlock() {
   //  }
   // }
 
+  CallbackStruct callback_data_;
 
-  this->callback_data_.output_samples = &(this->output_data_[0]);
-  this->callback_data_.input_samples = &(this->input_buffer_[0]);
-  this->callback_data_.current_frame = 0;
-  this->callback_data_.frames_left = num_frames;
-  this->callback_data_.output_channel = this->getCurrentOutputChannel();
-  this->callback_data_.input_channel = this->getCurrentInputChannel();
-  this->callback_data_.num_input_channels = this->getNumInputChannels();
-  this->callback_data_.num_output_channels = this->getNumOutputChannels();
+  callback_data_.output_samples = &(this->output_data_[0]);
+  callback_data_.input_samples = &(this->input_buffer_[0]);
+  callback_data_.current_frame = 0;
+  callback_data_.frames_left = num_frames;
+  callback_data_.output_channel = this->getCurrentOutputChannel();
+  callback_data_.input_channel = this->getCurrentInputChannel();
+  callback_data_.num_input_channels = this->getNumInputChannels();
+  callback_data_.num_output_channels = this->getNumOutputChannels();
   log_msg<LOG_INFO>(L"PortAudioClass::setupSweepCallbackBlock - \n"
                     "____________________________\n"
                     "Number of frames assigned %d \n"
@@ -192,11 +196,10 @@ bool PortAudioClass::setupSweepCallbackBlock() {
                     % num_frames % this->getCurrentOutputChannel()
                     % this->getCurrentInputChannel();
 
-  return true;
+  return callback_data_;
 }
 
 void PortAudioClass::setCallback(PaClassCallback callback) {
   log_msg<LOG_INFO>(L"PortAudioClass::setCallback");
   this->callback_ = callback;
 }
-
