@@ -1,6 +1,7 @@
 #include "./includes/portaudio.h"
 #include "./pa_class/PortAudioClass.h"
 #include "./signal_block/SignalBlock.h"
+#include "./filter_block/FilterBlock.h"
 
 #include <iostream>
 #include <cmath>

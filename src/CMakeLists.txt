@@ -8,21 +8,26 @@
 # PORT AUDIO
 SET(PA_SOURCES ./pa_devs.c)
 SET(SOURCES_ ${PA_SOURCES})
-SET(PA_INCLUDES ../include/)
-SET(PA_LIBRATY ../lib/)
 
-SET(BOOST_INCLUDE "/usr/local/boost_1_53_0")
-SET(FFTW_INCLUDE "/Developer/fftw-3.3.2/api")
+#CUDA STUFF
+SET(CUDA_PATH "/usr/local/cuda/")
+SET(CUDA_INCLUDE ${CUDA_PATH}/include/)
+SET(CUDA_LIBRARY ${CUDA_PATH}/lib/)
 
 SET(EXECUTABLE_OUTPUT_PATH ../bin/)
 
 #ADD INCLUDE & LINK DIRECTORIES
-INCLUDE_DIRECTORIES(${PA_INCLUDES} ${BOOST_INCLUDE} ${FFTW_INCLUDE} /pa_class/)
+INCLUDE_DIRECTORIES(/pa_class/ /opt/local/include ${CUDA_INCLUDE})
+LINK_DIRECTORIES(/opt/local/lib ${CUDA_LIBRARY})
+
+
+#CUDA FILES
+CUDA_COMPILE(gpu_filter_o ./filter_block/GPUfilter.cu)
 
 # DEFINE EXECUTABLES
-ADD_EXECUTABLE(port_audio_class main.cpp logger.cpp ./pa_class/PortAudioClass.cpp ./signal_block/SignalBlock.cpp)
+ADD_EXECUTABLE(port_audio_class main.cpp logger.cpp ./pa_class/PortAudioClass.cpp ./signal_block/SignalBlock.cpp ./filter_block/FilterBlock.cpp ${gpu_filter_o})
 
 # LINK TARGETS
-TARGET_LINK_LIBRARIES(port_audio_class ${PA_LIBRARY}libportaudio.a  ${PA_LIBRARY}libfftw3.a)
+TARGET_LINK_LIBRARIES(port_audio_class libportaudio.a libfftw3.a cudart)
 
 
