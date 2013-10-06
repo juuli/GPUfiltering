@@ -17,7 +17,7 @@ enum log_level {
     LOG_WARNING,
     LOG_INFO,
     LOG_DEBUG,
-	LOG_VERBOSE
+    LOG_VERBOSE
 };
 
 class Logger {
@@ -38,27 +38,26 @@ public:
       }
   }
 
-	template<typename T>
-	Logger& operator %(T value) {
-		fmt_ % value;
-		return *this;
-	}
+  template<typename T>
+  Logger& operator %(T value) {
+    fmt_ % value;
+    return *this;
+  }
 
-	Logger(const Logger& other)
-	: level_(other.level_),
-	  fmt_(other.fmt_),
-	  logfile_("solver_log.txt",  std::fstream::out | std::fstream::app)
-	  {}; 
-	
+  Logger(const Logger& other)
+  : level_(other.level_),
+    fmt_(other.fmt_),
+    logfile_("solver_log.txt",  std::fstream::out | std::fstream::app)
+  {};
+
 private:
-	log_level level_;
-	boost::wformat fmt_;
-	std::wofstream logfile_;
+  log_level level_;
+  boost::wformat fmt_;std::wofstream logfile_;
 };
 
 template <log_level level>
 Logger log_msg(const wchar_t* msg) {
-	return Logger(level, msg);
+  return Logger(level, msg);
 }
 
 void loggerInit(); 

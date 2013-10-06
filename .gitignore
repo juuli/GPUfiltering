@@ -5,9 +5,11 @@
 /src/CMakeFiles
 /bin
 
+.project
 MakeFile
 response.txt
 solver_log.txt
+
 
 *.cmake
 *.swp
