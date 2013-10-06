@@ -28,11 +28,11 @@ typedef struct callback_struct_t{
 } CallbackStruct;
 
 
-static int convolutionCallbackCPU(const void *input_buffer, void *output_buffer,
-                                  unsigned long frames_per_buffer,
-                                  const PaStreamCallbackTimeInfo* timeInfo,
-                                  PaStreamCallbackFlags statusFlags,
-                                  void *user_data ) {
+static int convolutionCallback(const void *input_buffer, void *output_buffer,
+                               unsigned long frames_per_buffer,
+                               const PaStreamCallbackTimeInfo* timeInfo,
+                               PaStreamCallbackFlags statusFlags,
+                               void *user_data ) {
 
   FilterBlock* fb = (FilterBlock*)user_data;
   fb->convolveFrame((const float*)input_buffer, (float*)output_buffer);
@@ -40,26 +40,25 @@ static int convolutionCallbackCPU(const void *input_buffer, void *output_buffer,
 }
 
 static int playRecCallback(const void *inputBuffer, void *outputBuffer,
-						               unsigned long frames_per_buffer,
-						               const PaStreamCallbackTimeInfo* timeInfo,
-						               PaStreamCallbackFlags statusFlags,
-						               void *user_data ) {
+                           unsigned long frames_per_buffer,
+                           const PaStreamCallbackTimeInfo* timeInfo,
+                           PaStreamCallbackFlags statusFlags,
+                           void *user_data ) {
   float *out = (float*)outputBuffer;
   const float *in = (const float*)inputBuffer;
-		
+
   CallbackStruct* host_data = (CallbackStruct*)user_data;
     
   int start_idx = host_data->current_frame*frames_per_buffer;
 
   (void) timeInfo; /* Prevent unused variable warnings. */
   (void) statusFlags;
-	
 
   if(inputBuffer == NULL || host_data->frames_left==0) {
     for(unsigned int i=0; i<frames_per_buffer; i++ ) {
       int idx = i*host_data->num_output_channels+host_data->output_channel;
       out[idx] = 0.f;  /* left - silent */
-		}
+    }
   }
   else {
     for(unsigned int i=0; i<frames_per_buffer; i++ ) {
@@ -77,10 +76,10 @@ static int playRecCallback(const void *inputBuffer, void *outputBuffer,
 
 // Callback which fetches input samples and passes them to output
 static int inputdataCallback(const void *inputBuffer, void *outputBuffer,
-						                 unsigned long frames_per_buffer,
-						                 const PaStreamCallbackTimeInfo* timeInfo,
-						                 PaStreamCallbackFlags statusFlags,
-						                 void *user_data) 
+                             unsigned long frames_per_buffer,
+                             const PaStreamCallbackTimeInfo* timeInfo,
+                             PaStreamCallbackFlags statusFlags,
+                             void *user_data)
 {
   float *out = (float*)outputBuffer;
   const float *in = (const float*)inputBuffer;
@@ -106,14 +105,14 @@ static int inputdataCallback(const void *inputBuffer, void *outputBuffer,
 };
 
 static int outputdataCallback(const void *inputBuffer, void *outputBuffer,
-						               unsigned long frames_per_buffer,
-						               const PaStreamCallbackTimeInfo* timeInfo,
-						               PaStreamCallbackFlags statusFlags,
-						               void *user_data ) 
+                              unsigned long frames_per_buffer,
+                              const PaStreamCallbackTimeInfo* timeInfo,
+                              PaStreamCallbackFlags statusFlags,
+                              void *user_data )
 {
   float *out = (float*)outputBuffer;
   (void*)inputBuffer;
-  	
+
   CallbackStruct* output_data = (CallbackStruct*)user_data;
   
   int start_idx = output_data->current_frame*frames_per_buffer;
@@ -127,7 +126,7 @@ static int outputdataCallback(const void *inputBuffer, void *outputBuffer,
       for(unsigned int i=0; i<frames_per_buffer; i++ ) {
        int idx = i*output_data->num_output_channels+output_data->output_channel;
        out[idx] = 0.f;  /* left - silent */
-	    }
+      }
   }
   else {
       for(unsigned int i=0; i<frames_per_buffer; i++ ) {
@@ -141,10 +140,10 @@ static int outputdataCallback(const void *inputBuffer, void *outputBuffer,
 };
 
 static int defaultCallback(const void *inputBuffer, void *outputBuffer,
-						               unsigned long framesPerBuffer,
-						               const PaStreamCallbackTimeInfo* timeInfo,
-						               PaStreamCallbackFlags statusFlags,
-						               void *userData )
+                           unsigned long framesPerBuffer,
+                           const PaStreamCallbackTimeInfo* timeInfo,
+                           PaStreamCallbackFlags statusFlags,
+                           void *userData )
 {
   float *out = (float*)outputBuffer;
   (void*)inputBuffer;
@@ -156,10 +155,9 @@ static int defaultCallback(const void *inputBuffer, void *outputBuffer,
 
   if( inputBuffer == NULL ) {
       for( i=0; i<framesPerBuffer; i++ ) {
-		
           out[i*0] = 0;  /* left - silent */
           out[i*0+1] = 0;  /* right - silent */
-	    }
+      }
   }
   else {
       for( i=0; i<framesPerBuffer; i++ ) {
@@ -187,7 +185,10 @@ public:
     current_output_channel_(0),
     callback_data_ptr_((void*)NULL),
     output_buffer_(),
-    input_buffer_()
+    input_buffer_(),
+    stream_(NULL),
+    current_device_info_(NULL),
+    callback_(NULL)
   {};
 
   ~PortAudioClass() {};

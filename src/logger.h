@@ -7,8 +7,8 @@
 #include <sstream>
 #include <time.h> 
 
-#define LOG_COUT 5
-#define LOG_TO_FILE 5
+#define LOG_COUT 4
+#define LOG_TO_FILE 4
 
 enum log_level {
     LOG_NOTHING,
@@ -22,21 +22,21 @@ enum log_level {
 
 class Logger {
 public:
-	Logger(log_level level, const wchar_t* msg )
-	: level_(level),
+  Logger(log_level level, const wchar_t* msg )
+  : level_(level),
     fmt_(msg),
-	  logfile_("solver_log.txt",  std::fstream::out | std::fstream::app)
-	  {};
+    logfile_("solver_log.txt",  std::fstream::out | std::fstream::app)
+  {};
 
-	~Logger() {
-		if(LOG_COUT >= level_)
-			std::wcout<<level_<<L" "<<fmt_<<std::endl;
+  ~Logger() {
+    if(LOG_COUT >= level_)
+      std::wcout<<level_<<L" "<<fmt_<<std::endl;
 
-		if(LOG_TO_FILE >= level_) {
-			logfile_<<level_<<L" "<<fmt_<<std::endl;
-			logfile_.close();
-		}
-	}
+      if(LOG_TO_FILE >= level_) {
+        logfile_<<level_<<L" "<<fmt_<<std::endl;
+        logfile_.close();
+      }
+  }
 
 	template<typename T>
 	Logger& operator %(T value) {

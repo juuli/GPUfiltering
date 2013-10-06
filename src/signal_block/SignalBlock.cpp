@@ -81,7 +81,7 @@ std::vector<float> SignalBlock::getRawIr(const std::vector<float> sweep,
   log_msg<LOG_INFO>(L"SignalBlock::getRawIr - Extracting IR with fftw, Sweep length %d") %len;
 
 
-  std::vector<float> ir;
+  std::vector<float> ir(len);
 
   fftw_complex* in_sweep = (fftw_complex*)malloc(sizeof(fftw_complex)*len);
   fftw_complex* out_sweep = (fftw_complex*)malloc(sizeof(fftw_complex)*len);
@@ -112,7 +112,6 @@ std::vector<float> SignalBlock::getRawIr(const std::vector<float> sweep,
   fftw_execute(p);
   fftw_destroy_plan(p);
 
-  ir.assign(len, 0.f);
   for(int i = 0; i < len; i++)
     ir.at(i) = out_measured[i][0];
 

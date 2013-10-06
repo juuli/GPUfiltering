@@ -1,6 +1,6 @@
 #include "PortAudioClass.h"
 
-static FilterBlock* filter_block;
+//static FilterBlock* filter_block;
 
 // PortAudio error check routine
 bool paCheck(PaError err) {
@@ -16,6 +16,7 @@ bool PortAudioClass::initialize() {
   log_msg<LOG_INFO>(L"PortAudioClass::initialize() - port audio initialize");
   bool ret = false;
   ret = paCheck(Pa_Initialize());
+
   this->setInitialized(ret);
   this->number_of_devices_ = Pa_GetDeviceCount();
   this->pa_version_ = Pa_GetVersion();
@@ -85,7 +86,7 @@ bool PortAudioClass::openStream() {
                               this->getFramesPerBuffer(),
                               0, // paClipOff 
                               this->callback_,
-                              &(this->callback_data_ptr_))); // user data
+                              this->callback_data_ptr_)); // user data
   return ret;
 }
 
@@ -152,10 +153,9 @@ void PortAudioClass::setFramesPerBuffer(unsigned long fpb) {
   this->frames_per_buffer_ = fpb;
 }
 
-CallbackStruct PortAudioClass::setupSweepCallbackBlock() {  
+CallbackStruct PortAudioClass::setupSweepCallbackBlock() {
   int data_size = this->output_data_.size();
   int num_frames = data_size/this->getFramesPerBuffer();
-  
 
   if(data_size%this->getFramesPerBuffer() != 0) {
     int reminder = data_size-(num_frames*this->getFramesPerBuffer());
@@ -164,10 +164,10 @@ CallbackStruct PortAudioClass::setupSweepCallbackBlock() {
     data_size += reminder;
     this->output_data_.resize(data_size, 0.f);
   }
-  
+
   // Allocate data for output and input buffer
   this->input_buffer_.assign(data_size, 0.f);
-  
+
   //// This would be handy to send different data to different channels
   // ON HOLD
   //for(int i = 0; i < data_size; i++) {

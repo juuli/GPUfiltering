@@ -5,11 +5,13 @@
 
 #include <iostream>
 #include <cmath>
+#include <string>
 
 void writeFile(std::string fp, 
                const std::vector<float>& sweep,
                const std::vector<float>& measured,
-               std::vector<float>& raw_ir) {
+               std::vector<float>& raw_ir) 
+{
   int len = sweep.size();
   int ir_len = raw_ir.size();
   log_msg<LOG_INFO>(L"Write File - sweep len %d, Ir len: %d") % len %ir_len;
@@ -19,32 +21,22 @@ void writeFile(std::string fp,
 	}
 
 	respfile.close();
-
 }
-
 
 int main(void) {
   loggerInit();
   PortAudioClass pa;
   SignalBlock sb;  
   FilterBlock fb;
-
+  fb.initialize();
   // Global setup
 
-  int num_inputs = 2;
-  int num_outputs = 2;
+  int num_inputs = 4;
+  int num_outputs = 4;
+  EXEC_MODE mode = T_GPU;
+  fb.setMode(mode);
 
   fb.setNumInAndOutputs(num_inputs,num_outputs);
-
-  /* initia filter setup test
-  std::vector<float> filter1(10);
-  filter1.at(1) = 1;  
-  std::vector<float> filter2(512);
-  filter2.at(480) = 1;
-
-  fb.setFilterTaps(0,0, filter1); // left to left
-  fb.setFilterTaps(1,1, filter2); // right to right
-  */
 
   pa.initialize();
   
@@ -55,9 +47,9 @@ int main(void) {
   // Soundflower 16 is index 5
 
   // port audio setup
-  pa.setCurrentDevice(5);
-  pa.setNumInputChannels(2);
-  pa.setNumOutputChannels(2);
+  pa.setCurrentDevice(4);
+  pa.setNumInputChannels(num_inputs);
+  pa.setNumOutputChannels(num_outputs);
 
   // this is for the sweep, one pair at a time
   pa.setCurrentOutputChannel(0);
@@ -70,12 +62,19 @@ int main(void) {
   sb.setFBegin(1);
   sb.setFEnd(20000);
   sb.setLength(6);
-  pa.output_data_ = sb.getSweep();
 
-  CallbackStruct sweep = pa.setupSweepCallbackBlock();
-  
-  pa.setCallbackData((void*)&sweep);
-  pa.setCallback(playRecCallback);
+  if(mode == SWEEP) {
+    pa.output_data_ = sb.getSweep();
+    CallbackStruct sweep = pa.setupSweepCallbackBlock();
+    pa.setCallbackData((void*)&sweep);
+    pa.setCallback(playRecCallback);
+  }
+  if(mode < SWEEP) {
+    log_msg<LOG_INFO>(L"main - Convoltuion processing: %s")%mode_texts[(int)mode];
+    pa.setCallbackData((void*)(&fb));
+    pa.setCallback(convolutionCallback);
+  }
+
 
   pa.openStream();
   pa.startStream();
@@ -83,10 +82,10 @@ int main(void) {
   pa.closeStream();
   pa.terminate();
 
-  std::vector<float> ir = sb.getRawIr(pa.getOutputData(),
-                                      pa.getInputBuffer());
-  
-  writeFile("response.txt", pa.getOutputData(), pa.getInputBuffer(), ir);
-  
+  if(mode == SWEEP) {
+    std::vector<float> ir = sb.getRawIr(pa.getOutputData(),
+                                        pa.getInputBuffer());  
+    writeFile("response.txt", pa.getOutputData(), pa.getInputBuffer(), ir);
+  }
   return 0;
 }
