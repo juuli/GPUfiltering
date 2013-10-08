@@ -2,7 +2,6 @@
 #include "./pa_class/PortAudioClass.h"
 #include "./signal_block/SignalBlock.h"
 #include "./filter_block/FilterBlock.h"
-#include "global_includes.h"
 
 #include <iostream>
 #include <cmath>
@@ -55,7 +54,6 @@ int main(void) {
   // this is for the sweep, one pair at a time
   pa.setCurrentOutputChannel(0);
   pa.setCurrentInputChannel(1);
-
   pa.setFs(48e3);
   
   // sweep parameters  

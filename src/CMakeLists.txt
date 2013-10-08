@@ -24,15 +24,32 @@ LINK_DIRECTORIES(/opt/local/lib ${CUDA_LIBRARY} ${GTEST_LIB})
 
 #CUDA FILES
 CUDA_COMPILE(gpu_filter_o ./filter_block/GPUfilter.cu)
+CUDA_COMPILE(cuda_utils_o ./filter_block/cudaUtils.cu)
 
 # DEFINE EXECUTABLES
-ADD_EXECUTABLE(run_pa main.cpp logger.cpp ./pa_class/PortAudioClass.cpp ./signal_block/SignalBlock.cpp ./filter_block/FilterBlock.cpp ${gpu_filter_o} )
 
-ADD_EXECUTABLE(FilterBlock_test ./tests/FilterBlockTest.cpp ./filter_block/FilterBlock.cpp ${gpu_filter_o})
+# Project
+ADD_EXECUTABLE(run_pa main.cpp logger.cpp ./pa_class/PortAudioClass.cpp 
+               ./signal_block/SignalBlock.cpp ./filter_block/FilterBlock.cpp 
+               ${gpu_filter_o} )
+
+# TESTS
+ADD_EXECUTABLE(FilterBlock_test ./tests/FilterBlockTest.cpp 
+              ./filter_block/FilterBlock.cpp ${gpu_filter_o})
+
+ADD_EXECUTABLE(GPUfilter_test ./tests/GPUfilterTest.cpp 
+              ./filter_block/cudaHelpers.cpp logger.cpp
+              ${gpu_filter_o} ${cuda_utils_o})
 
 # LINK TARGETS
 TARGET_LINK_LIBRARIES(run_pa libportaudio.a libfftw3.a cudart)
-TARGET_LINK_LIBRARIES(FilterBlock_test libportaudio.a libfftw3.a cudart ${Boost_FILESYSTEM_LIBRARY} 
+TARGET_LINK_LIBRARIES(FilterBlock_test libportaudio.a libfftw3.a cudart 
+                      ${Boost_FILESYSTEM_LIBRARY} 
                       ${Boost_SYSTEM_LIBRARY} ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY})
+
+TARGET_LINK_LIBRARIES(GPUfilter_test cudart cufft 
+                      ${Boost_FILESYSTEM_LIBRARY} 
+                      ${Boost_SYSTEM_LIBRARY} ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY})
+
 
 

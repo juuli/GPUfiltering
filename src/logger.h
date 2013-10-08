@@ -7,7 +7,7 @@
 #include <sstream>
 #include <time.h> 
 
-#define LOG_COUT 4
+#define LOG_COUT 5
 #define LOG_TO_FILE 4
 
 enum log_level {
@@ -48,11 +48,12 @@ public:
   : level_(other.level_),
     fmt_(other.fmt_),
     logfile_("solver_log.txt",  std::fstream::out | std::fstream::app)
-  {};
+  {}
 
 private:
   log_level level_;
-  boost::wformat fmt_;std::wofstream logfile_;
+  boost::wformat fmt_;
+  std::wofstream logfile_;
 };
 
 template <log_level level>

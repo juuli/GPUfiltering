@@ -5,7 +5,9 @@
 /src/CMakeFiles
 /bin
 
+.settings/
 .project
+.cproject
 MakeFile
 response.txt
 solver_log.txt
