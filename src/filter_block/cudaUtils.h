@@ -6,6 +6,7 @@
 #include <iostream>
 #include <stdio.h>
 #include <assert.h>
+#include <cufft.h>
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <cuda_gl_interop.h>
@@ -84,17 +85,33 @@ T* fromDevice(unsigned int mem_size, const T* d_data, unsigned int device) {
 // Copy helpper, if you dont know what you are doing, it will probably segfault
 template < typename T>
 void copyHostToDevice(unsigned int mem_size, T* d_dest, T* h_data, unsigned int device) {
-    c_log_msg(LOG_DEBUG, "cudaUtils.cu: T copyHostToDevice - mem_size %u, device %u", mem_size, device);
+  cudasafe(cudaSetDevice(device), "T copyHostToDevice: cudaSetDevice");
+  c_log_msg(LOG_VERBOSE, "cudaUtils.cu: T copyHostToDevice - mem_size %u, device %u", mem_size, device);
   	cudasafe(cudaMemcpy(d_dest, h_data,  mem_size*sizeof(T), cudaMemcpyHostToDevice), "Memcopy");
 }
 
 // Same goes with this
 template < typename T>
 void copyDeviceToHost(unsigned int mem_size, T* h_dest, T* d_src, unsigned int device) {
-    c_log_msg(LOG_DEBUG, "cudaUtils.cu: T copyDeviceToHost - mem_size %u, device %u", mem_size, device);
-  	cudasafe(cudaMemcpy(h_dest, d_src,  mem_size*sizeof(T), cudaMemcpyDeviceToHost), "Memcopy");
+  cudasafe(cudaSetDevice(device), "T copyDeviceToHost: cudaSetDevice");
+  
+  c_log_msg(LOG_VERBOSE, "cudaUtils.cu: T copyDeviceToHost - "
+                       "mem_size %u, device %u", mem_size, device);
+  	cudasafe(cudaMemcpy(h_dest, d_src,  mem_size*sizeof(T), 
+                        cudaMemcpyDeviceToHost), "Memcopy");
 }
 
+// And this
+template < typename T>
+void copyDeviceToDevice(unsigned int mem_size, T* d_dest, T* d_src, unsigned int device) {
+    cudasafe(cudaSetDevice(device), "T copyDeviceToDevice: cudaSetDevice");
+
+    c_log_msg(LOG_VERBOSE, "cudaUtils.cu: T copyDeviceToDevice - "
+                         "mem_size %u, device %u", mem_size, device);
+
+  	cudasafe(cudaMemcpy(d_dest, d_src,  mem_size*sizeof(T), 
+                        cudaMemcpyDeviceToDevice), "Memcopy");
+}
 
 template < typename T >
 void resetData(unsigned int mem_size, T* d_data, unsigned int device);
@@ -136,5 +153,7 @@ void destroyMem(T* d_data, unsigned int device) {
 
 template <typename T>
 __global__ void resetKernel(T* d_data, unsigned int mem_size); 
+
+__global__ void resetKernelComplex(cufftComplex* d_data, unsigned int mem_size);
 
 #endif

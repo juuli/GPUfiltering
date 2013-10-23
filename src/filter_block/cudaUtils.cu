@@ -1,6 +1,5 @@
 #include "cudaUtils.h"
 
-
 int getCurrentDevice() {
   int dev_num;
   cudasafe(cudaGetDevice(&dev_num), "cudaGetDevice");
@@ -86,9 +85,19 @@ void printMax(float* d_data, size_t mem_size, char* message) {
 
 /// Kernel
 
+template<>
+void resetData(unsigned int mem_size, cufftComplex* d_data, unsigned int device) {
+  c_log_msg(LOG_VERBOSE, "cudaUtils.cu: resetcufftComplex(data) - mem_size %u, device %d", mem_size, device);
+  cudasafe(cudaSetDevice(device), "floatsToDevice: cudaSetDevice");
+
+  dim3 block(128);
+  dim3 grid(mem_size/block.x+1);
+  resetKernelComplex<<<grid, block>>>(d_data, mem_size);
+}
+
 template <>
 void resetData(unsigned int mem_size, float* d_data, unsigned int device) {
-  c_log_msg(LOG_DEBUG, "cudaUtils.cu: resetFloats(data) - mem_size %u, device %d", mem_size, device);
+  c_log_msg(LOG_VERBOSE, "cudaUtils.cu: resetFloats(data) - mem_size %u, device %d", mem_size, device);
   cudasafe(cudaSetDevice(device), "floatsToDevice: cudaSetDevice");
 
   dim3 block(128);
@@ -98,7 +107,7 @@ void resetData(unsigned int mem_size, float* d_data, unsigned int device) {
 
 template <>
 void resetData(unsigned int mem_size, double* d_data, unsigned int device) {
-  c_log_msg(LOG_DEBUG, "cudaUtils.cu: resetDouble(data) - mem_size %u, device %d", mem_size, device);
+  c_log_msg(LOG_VERBOSE, "cudaUtils.cu: resetDouble(data) - mem_size %u, device %d", mem_size, device);
 
   dim3 block(128);
   dim3 grid(mem_size/block.x+1);
@@ -111,3 +120,13 @@ __global__ void resetKernel(T* d_data, unsigned int mem_size) {
   if(idx < mem_size)
     d_data[idx] = (T)0;
 }
+
+__global__ void resetKernelComplex(cufftComplex* d_data, unsigned int mem_size) {
+  unsigned int idx = blockDim.x*blockIdx.x+threadIdx.x;
+  if(idx < mem_size) {
+    cufftComplex val;
+    val.x = 0; val.y = 0;
+    d_data[idx] = val;
+  }
+}
+

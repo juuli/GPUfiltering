@@ -1,10 +1,11 @@
 #include "FilterBlock.h"
-
+#include "GPUfilter.h"
 
 void FilterBlock::initialize() { 
   this->allocateFilters();
   cudaSetDevice(0);
   cudaDeviceReset();
+  this->initializeConvolver();
 }
 
 void FilterBlock::setNumInAndOutputs(int num_inputs, int num_outputs) {
@@ -42,27 +43,26 @@ void FilterBlock::allocateFilters() {
     this->delay_lines_.at(i) = std::vector<float>(this->getDelayLineLen(), 0.f);
   
   // If GPU, allocate thrust host vectors
-  if(this->selected_mode_ == T_GPU) {
-    // Host
-    this->h_filter_taps_ = thrust::host_vector<float>(this->getFilterLen()*this->getNumCombinations(), 0.f);
-    this->h_delay_lines_ = thrust::host_vector<float>(this->getDelayLineLen()*this->getNumInputs(), 0.f);
+  //if(this->selected_mode_ == T_GPU) {
+  //  // Host
+  //  this->convolver_.initialize(this->filter_taps_);
+  //}
+}
 
-    // Device
-    //this->d_delay_lines_.clear();
-    //this->d_delay_lines_ = thrust::device_vector<float>(this->getDelayLineLen()*this->getNumInputs(), 0.f);
-    //this->d_filter_taps_ = thrust::device_vector<float>(this->getFilterLen()*this->getNumCombinations(), 0.f);
-    
-    printf("FilterBlock::allocateFilters() - h_d size %zu", this->h_delay_lines_.size());
-  }
+void FilterBlock::initializeConvolver() {
+  log_msg<LOG_INFO>(L"FilterBlock::initializeConvolver");
+  this->convolver_ = Convolver(this->getNumInputs(),
+                               this->getNumOutputs(),
+                               this->getFilterLen(),
+                               this->getFrameLen());
+
+  this->convolver_.initialize(this->filter_taps_);
+  this->convolver_initialized_ = true;
 }
 
 int FilterBlock::getFilterContainerSize() {
   int ret = 0;
-  if(this->selected_mode_ == T_CPU)
-    ret = (this->filter_taps_.size()*this->filter_taps_.at(0).size());
-  if(this->selected_mode_ == T_GPU)
-    ret = h_filter_taps_.size();
-
+  ret = (this->filter_taps_.size()*this->filter_taps_.at(0).size());
   return ret;
 }
 
@@ -107,11 +107,6 @@ void FilterBlock::setFilterTaps(int input, int output, std::vector<float>& taps)
    
     this->filter_taps_.at(filter_idx).at(i) = tap;
 
-    // IF GPU, taps are copied to the thrust host vector
-    if(this->selected_mode_ == T_GPU) {
-      this->h_filter_taps_[filter_idx*filter_len+i] = tap;
-    }
-
   }
 }
 
@@ -119,13 +114,7 @@ float* FilterBlock::getFilterTaps(int input, int output) {
   int filter_idx = this->getFilterIndex(input, output);
   float* ret = (float*)NULL;
 
-  if(this->selected_mode_ == T_CPU)
-    ret = &(this->filter_taps_.at(filter_idx)[0]);
-  
-  if(this->selected_mode_ == T_GPU) {
-    int idx = filter_idx*this->getFilterLen();
-    ret = &(this->h_filter_taps_[idx]);
-  }
+  ret = &(this->filter_taps_.at(filter_idx)[0]);
   
   return ret;
 }
@@ -187,21 +176,25 @@ void FilterBlock::convolveFrameCPU(const float* input_frame, float* output_frame
   return;
 }
 
-void FilterBlock::convolveFrameGPU(const float* input_frame, float* output_frame) {
+void FilterBlock::frameThrough(const float* input_frame, float* output_frame) {
   int num_inputs = this->getNumInputs();
   int num_outputs = this->getNumOutputs();
+  int frame_len = this->getFrameLen();
   int d_line_len = this->getDelayLineLen();
   // quick tryout to just delay left
   int delay[2] = {0, 0};
-  
+  std::vector<float> in(num_inputs*this->getFrameLen());
+  std::vector<float> out(num_outputs*this->getFrameLen());
+
   for(int i = 0; i < num_inputs; i++) {
-    for(int j = 0; j < this->getFrameLen(); j++) {
-      int h_idx = i*d_line_len+this->head_position_+j;
-      this->h_delay_lines_[h_idx] = input_frame[j*num_inputs+i];
+    for(int j = 0; j < frame_len; j++) {
+      in.at(i*frame_len+j) = input_frame[j*num_inputs+i];
     }
   }
-
-
+  convolver_.passBuffersThrough(&(in[0]),
+                                &(out[0]));
+  
+  cudaDeviceSynchronize();
 
   /* TODO 
     Copy delaylines, filters and output buffers to device
@@ -212,22 +205,60 @@ void FilterBlock::convolveFrameGPU(const float* input_frame, float* output_frame
   */
 
   for(int i = 0; i < num_outputs; i++) {
-    for(int j = 0; j < this->getFrameLen(); j++) {
+    for(int j = 0; j < frame_len; j++) {
       if(i == 2) {
-        int h_idx = 0*d_line_len+getDelayLineIdx(j-delay[0]);
-        output_frame[j*num_outputs+i] = this->h_delay_lines_[h_idx];
+        //int h_idx = 0*d_line_len+getDelayLineIdx(j-delay[0]);
+        output_frame[j*num_outputs+i] = out[0*frame_len+j];
 
       }
 
       if(i == 3) {
-        int h_idx = 1*d_line_len+getDelayLineIdx(j-delay[1]);
-        output_frame[j*num_outputs+i] = this->h_delay_lines_[h_idx];
+        //int h_idx = 1*d_line_len+getDelayLineIdx(j-delay[1]);
+        output_frame[j*num_outputs+i] = out[1*frame_len+j];
       }
     }// end frame loop
   } // end output loop
   
   // increment the head position on the delay line and take a modulo to keep it in
-  this->head_position_ = this->getDelayLineIdx(this->getFrameLen());
+  return;
+}
+
+void FilterBlock::convolveFrameGPU(const float* input_frame, float* output_frame) {
+  int num_inputs = this->getNumInputs();
+  int num_outputs = this->getNumOutputs();
+  int frame_len = this->getFrameLen();
+  int d_line_len = this->getDelayLineLen();
+  // quick tryout to just delay left
+  int delay[2] = {0, 0};
+  std::vector<float> in(num_inputs*this->getFrameLen());
+  std::vector<float> out(num_outputs*this->getFrameLen());
+
+  for(int i = 0; i < num_inputs; i++) {
+    for(int j = 0; j < frame_len; j++) {
+      in.at(i*frame_len+j) = input_frame[j*num_inputs+i];
+    }
+  }
+  convolver_.convolveT(&(in[0]),
+                       &(out[0]));
+  
+  cudaDeviceSynchronize();
+
+  /* TODO 
+    Copy delaylines, filters and output buffers to device
+    
+    Process, copy output buffers to host 
+
+    interlace out
+  */
+
+  for(int i = 0; i < num_outputs; i++) {
+    for(int j = 0; j < frame_len; j++) {
+        //int h_idx = 0*d_line_len+getDelayLineIdx(j-delay[0]);
+        output_frame[j*num_outputs+i] = out[i*frame_len+j];
+    }// end frame loop
+  } // end output loop
+  
+  // increment the head position on the delay line and take a modulo to keep it in
   return;
 }
 

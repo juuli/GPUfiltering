@@ -7,7 +7,7 @@
 #include <sstream>
 #include <time.h> 
 
-#define LOG_COUT 5
+#define LOG_COUT 4
 #define LOG_TO_FILE 4
 
 enum log_level {

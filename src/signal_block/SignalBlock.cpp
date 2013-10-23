@@ -78,7 +78,8 @@ std::vector<float> SignalBlock::getRawIr(const std::vector<float> sweep,
   timer = clock();
 
   int len = sweep.size();
-  log_msg<LOG_INFO>(L"SignalBlock::getRawIr - Extracting IR with fftw, Sweep length %d") %len;
+  log_msg<LOG_INFO>(L"SignalBlock::getRawIr - "
+                    "Extracting IR with fftw, Sweep length %d") %len;
 
 
   std::vector<float> ir(len);
@@ -105,7 +106,6 @@ std::vector<float> SignalBlock::getRawIr(const std::vector<float> sweep,
 
   for(int i = 0; i < len; i ++) {
     divide(&out_measured[i], &out_sweep[i], &in_sweep[i]);
-    //multiply(&out_sweep[i], &out_measured[i], &in_sweep[i]);
   }
 
   p = fftw_plan_dft_1d(len, in_sweep, out_measured, FFTW_BACKWARD, FFTW_ESTIMATE);

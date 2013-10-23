@@ -34,9 +34,32 @@ int main(void) {
   int num_inputs = 4;
   int num_outputs = 4;
   EXEC_MODE mode = T_GPU;
-  fb.setMode(mode);
 
+  int num_taps = 4800;
+  
+  std::vector<float> filter1(num_taps,0.f);
+  filter1.at(0) = 1.f;
+
+  std::vector<float> filter2(num_taps,0.f);
+  filter2.at(0) = 1.f;
+
+  fb.setFilterLen(num_taps);
   fb.setNumInAndOutputs(num_inputs,num_outputs);
+  
+  fb.setFilterTaps(0,2, filter1);
+  fb.setFilterTaps(1,3, filter2);
+  fb.setMode(mode);
+  
+
+
+
+
+
+
+  fb.initialize();
+  // TODO put filter data in and initialize
+
+
 
   pa.initialize();
   

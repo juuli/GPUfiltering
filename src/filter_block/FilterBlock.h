@@ -11,7 +11,7 @@
 
   Jukka Saarelma 4.10.2013
 */
-
+#include <iostream>
 #include <vector>
 #include <fftw3.h>
 #include <cufft.h>
@@ -33,16 +33,19 @@ public:
   : head_position_(0),
     num_inputs_(1),
     num_outputs_(2),
-    filter_len_(FRAME_LEN),
+    filter_len_(INIT_F_LEN),
     frame_len_(FRAME_LEN),
     delay_line_len_(FRAME_LEN*32),
     frame_count_(0),
     selected_mode_(T_CPU),
+    convolver_initialized_(false),
     filter_taps_(std::vector< std::vector<float> >(1*2)),
     delay_lines_(std::vector< std::vector<float> >(1))
   {};
 
-  ~FilterBlock(){};
+  ~FilterBlock(){
+    this->convolver_.cleanup();
+  };
 
 private:
   int head_position_;
@@ -54,40 +57,34 @@ private:
   long frame_count_;
   EXEC_MODE selected_mode_;
 
+  bool convolver_initialized_;
+  Convolver convolver_;
 
   // Filter taps for each input/output combination
   std::vector< std::vector<float> > filter_taps_;
   std::vector< std::vector<float> > delay_lines_;
-
-  // Device vectors, the form of these shoud be optimized
-  thrust::host_vector<float> h_input_frame_;
-  thrust::host_vector<float> h_output_frame_;
-  thrust::host_vector<float> h_filter_taps_;
-  thrust::host_vector<float> h_delay_lines_;
-
-  thrust::device_vector<float> d_input_frame_;
-  thrust::device_vector<float> d_output_frame_;
-  thrust::device_vector<float> d_filter_taps_;
-  thrust::device_vector<float> d_delay_lines_; 
-
 
   // Private methods
   int getNumCombinations(){return this->num_inputs_*this->num_outputs_;};
   void allocateFilters(); 
 
   void convolveFrameCPU(const float* input_frame, float* output_frame);
-  void convolveFrameGPU(const float* input_frame, float* output_frame);
+  
 public:
+  void frameThrough(const float* input_frame, float* output_frame);
+  void convolveFrameGPU(const float* input_frame, float* output_frame);
   void initialize();
+  void initializeConvolver();
   int getFilterContainerSize();
   int getNumInputs() {return this->num_inputs_;};
   int getNumOutputs() {return this->num_outputs_;};
   void setNumInAndOutputs(int num_inputs, int num_outputs);
   int getFilterIndex(int input, int output);
-  void setFilterLen(int filter_len);
+  void setFilterLen(int filter_len) {this->filter_len_ = filter_len;};
   int getFilterLen() {return this->filter_len_;};
   void setFilterTaps(int input, int output, std::vector<float>& taps);
   float* getFilterTaps(int input, int output);
+  void setFrameLen(int len) {this->frame_len_ = len;};
   int getFrameLen() {return this->frame_len_;};
   int getDelayLineIdx(int increment);
   int getDelayLineLen() {return this->delay_line_len_;};
