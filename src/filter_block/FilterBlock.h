@@ -15,10 +15,6 @@
 #include <vector>
 #include <fftw3.h>
 #include <cufft.h>
-#include <thrust/host_vector.h>
-#include <thrust/device_vector.h>
-#include <thrust/copy.h>
-#include <thrust/fill.h> 
  
 #include "../global_includes.h"
 #include "GPUfilter.h"
@@ -31,7 +27,7 @@ class FilterBlock {
 public:
   FilterBlock()
   : head_position_(0),
-    num_inputs_(1),
+    num_inputs_(2),
     num_outputs_(2),
     filter_len_(INIT_F_LEN),
     frame_len_(FRAME_LEN),
@@ -39,8 +35,8 @@ public:
     frame_count_(0),
     selected_mode_(T_CPU),
     convolver_initialized_(false),
-    filter_taps_(std::vector< std::vector<float> >(1*2)),
-    delay_lines_(std::vector< std::vector<float> >(1))
+    filter_taps_(std::vector< std::vector<float> >(2*2, std::vector<float>(INIT_F_LEN))),
+    delay_lines_(std::vector< std::vector<float> >(1, std::vector<float>(FRAME_LEN*32)))
   {};
 
   ~FilterBlock(){
@@ -67,7 +63,6 @@ private:
   // Private methods
   int getNumCombinations(){return this->num_inputs_*this->num_outputs_;};
   void allocateFilters(); 
-
   void convolveFrameCPU(const float* input_frame, float* output_frame);
   
 public:
@@ -75,14 +70,15 @@ public:
   void convolveFrameGPU(const float* input_frame, float* output_frame);
   void initialize();
   void initializeConvolver();
-  int getFilterContainerSize();
   int getNumInputs() {return this->num_inputs_;};
   int getNumOutputs() {return this->num_outputs_;};
   void setNumInAndOutputs(int num_inputs, int num_outputs);
   int getFilterIndex(int input, int output);
   void setFilterLen(int filter_len) {this->filter_len_ = filter_len;};
   int getFilterLen() {return this->filter_len_;};
+  int getFilterContainerSize();
   void setFilterTaps(int input, int output, std::vector<float>& taps);
+  float getFilterTapAt(int input, int output, int idx);
   float* getFilterTaps(int input, int output);
   void setFrameLen(int len) {this->frame_len_ = len;};
   int getFrameLen() {return this->frame_len_;};

@@ -40,9 +40,14 @@ public:
     num_outputs_(outputs),
     filter_len_(filter_len),
     buffer_len_(buffer_len),
+    pad_(buffer_len-1),
     conv_len_(filter_len+buffer_len-1),
     dl_len_(filter_len+2*buffer_len-1),
-    dl_loc_(0)
+    dl_loc_(0),
+    d_current_in_frame_(NULL),
+    d_current_out_frame_(NULL),
+    d_filters_(NULL),
+    d_output_dl_(NULL)
   {};
 
   ~Convolver() {};
@@ -52,6 +57,7 @@ private:
   int num_outputs_;
   int filter_len_;
   int buffer_len_;
+  int pad_;
   int conv_len_;
   int dl_len_;
   int dl_loc_;
@@ -73,11 +79,15 @@ public:
                  float* output_buffers);
 
   void cleanup() {
-    destroyMem<float>(d_current_out_frame_);
-    destroyMem<float>(d_current_in_frame_);
-    destroyMem<float>(d_filters_);
-    destroyMem<float>(d_output_dl_);
-  };
+    if(d_current_out_frame_) destroyMem<float>(d_current_out_frame_);
+    if(d_current_in_frame_) destroyMem<float>(d_current_in_frame_);
+    if(d_filters_) destroyMem<float>(d_filters_);
+    if(d_output_dl_) destroyMem<float>(d_output_dl_);
+  }
+
+  float* getDFilters() {
+    return this->d_filters_;
+  }
 
 };
 
@@ -181,6 +191,8 @@ __global__ void convolveBuffers(float* d_input,
                                 int buffer_len,
                                 int filter_len,
                                 int dl_len, 
-                                int dl_loc);
+                                int dl_loc,
+                                int conv_len,
+                                float* debug);
 
 #endif

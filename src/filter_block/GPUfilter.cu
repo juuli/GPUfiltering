@@ -4,14 +4,16 @@
 
 void Convolver::initialize(std::vector< std::vector<float> >& filters) {
   c_log_msg(LOG_INFO, "Convolver::initialize");
+  this->cleanup(); // Destroy past filters
   int pad = this->buffer_len_-1;
   int f_len = this->filter_len_;
   int number_of_filters = this->num_outputs_*this->num_inputs_;
-
-  int d_h_size = number_of_filters*(f_len+2*pad);
+  c_log_msg(LOG_INFO, "Convolver::initialize - filter len %d, pad %d",
+            f_len, pad);
+  int d_h_size = number_of_filters*(f_len+2*pad); // filter with padding
   int d_dl_size = this->num_outputs_*this->dl_len_; // output delay line
-  int d_y_size = this->num_outputs_*this->buffer_len_;
-  int d_x_size = this->num_inputs_*this->buffer_len_;
+  int d_y_size = this->num_outputs_*this->buffer_len_; // output buffer
+  int d_x_size = this->num_inputs_*this->buffer_len_; // input buffer
 
   float* d_h = valueToDevice<float>(d_h_size, 0.f, 0);
   float* d_dl = valueToDevice<float>(d_dl_size, 0.f, 0);
@@ -19,7 +21,8 @@ void Convolver::initialize(std::vector< std::vector<float> >& filters) {
   float* d_x = valueToDevice<float>(d_x_size, 0.f, 0);
 
   c_log_msg(LOG_INFO, "Convolver::initialize - number of filters %d", number_of_filters);
-  // Put filter to deviec
+  
+  // Put filter to device, add the padding
   for(int i = 0; i < number_of_filters; i++) {
     float* h_filter_ptr = &(filters.at(i)[0]);
     float* d_filter_ptr = &(d_h[pad+i*(f_len+2*pad)]);
@@ -32,7 +35,6 @@ void Convolver::initialize(std::vector< std::vector<float> >& filters) {
   this->d_current_in_frame_ = d_x;
   c_log_msg(LOG_INFO, "Convolver::initialize - done");
 }
-
 
 void Convolver::passBuffersThrough(float* input_buffers,
                                    float* output_buffers) {
@@ -61,30 +63,49 @@ void Convolver::passBuffersThrough(float* input_buffers,
 
 void Convolver::convolveT(float* input_buffers,
                           float* output_buffers) {
+  // Size of the frame
   int b_l = this->num_inputs_*this->buffer_len_;
+  // Filter len, fitlers are padded
+  int f_l = this->filter_len_+2*this->pad_;
+
   float* d_in= this->d_current_in_frame_;
   float* d_out = this->d_current_out_frame_;
   float* d_dl = this->d_output_dl_;
   float* d_h = this->d_filters_;
 
+  // Copy current frame to device
   copyHostToDevice<float>(b_l, d_in, input_buffers, 0);
+  
+  float* debug = (float*)NULL;
+  //float* debug = valueToDevice<float>(this->conv_len_, 0.f, 0);
 
-  dim3 block(512);
-  dim3 grid((int)(this->buffer_len_/block.x)+1);
+  dim3 block(256);
+  dim3 grid((int)(this->conv_len_/block.x)+1);
+  c_log_msg(LOG_DEBUG, "Launch, block x %u, y %u, z %u, grid x %d, y %d, z %d",
+            block.x, block.y, block.z, grid.x, grid.y, grid.z);
 
-  convolveBuffers<512, 2><<<grid, block>>>(d_in,
-                                           d_out,
-                                           d_dl,
-                                           d_h,
-                                           this->num_inputs_,
-                                           this->buffer_len_,
-                                           this->filter_len_,
-                                           this->dl_len_,
-                                           this->dl_loc_);
+  convolveBuffers<256, 2><<<grid, block>>>(d_in,
+                                          d_out,
+                                          d_dl,
+                                          d_h+this->pad_,
+                                          this->num_inputs_,
+                                          this->buffer_len_,
+                                          f_l,
+                                          this->dl_len_,
+                                          this->dl_loc_,
+                                          this->conv_len_,
+                                          debug);
 
   
-  copyDeviceToHost<float>(b_l, output_buffers, d_out, 0);
+  //copyDeviceToHost<float>(b_l, output_buffers, d_out, 0);
+  //float* h_debug = fromDevice<float>(this->conv_len_, debug, 0);
+  //for(int i = 0; i < this->conv_len_; i++)
+  //  printf("Debug vec %d: %f \n", i, h_debug[i]);
+
   this->dl_loc_ = MOD(this->dl_loc_+=this->buffer_len_, this->dl_len_);
+
+  //destroyMem<float>(debug);
+  //printf("Dl loc %d\n", this->dl_loc_);
 }
 
 // The lenght of y must be len_x+len_h-1, otherwise apeshit
@@ -311,7 +332,6 @@ __global__ void convolvePadHShared(const float* d_x,
                          int len_x,
                          int len_h,
                          int len) {
-
   /// Shared memory allocation
   __shared__ int block_begin;
   block_begin =  blockIdx.x*blockDim.x;
@@ -322,11 +342,9 @@ __global__ void convolvePadHShared(const float* d_x,
   __shared__ float s_h[2*BUFFER_SIZE];
   __shared__ float s_x[BUFFER_SIZE];
 
-
-  s_h[threadIdx.x] = d_h[block_begin+threadIdx.x-BUFFER_SIZE+1];
+  s_h[threadIdx.x] = d_h[global_idx-BUFFER_SIZE+1];
   s_h[thread_double] = d_h[block_begin+thread_double-BUFFER_SIZE+1];
-  //s_h[thread_double] = d_h[block_begin+thread_double-BUFFER_SIZE+1];
-  //s_h[thread_double+1] = d_h[block_begin+thread_double-BUFFER_SIZE+2];
+
   s_x[threadIdx.x] = d_x[threadIdx.x];
 
   __syncthreads();
@@ -361,7 +379,7 @@ __global__ void passThroughKernel(float* d_input,
     for(int i = 0; i < num_channels; i++) {
       d_dl[dl_idx+i*dl_len] = d_input[global_idx+i*buffer_len];
     }
-  
+
     #pragma unroll
     for(int j = 0; j < num_channels; j++) {
       d_output[global_idx+j*buffer_len] = d_dl[dl_idx+j*dl_len];
@@ -381,42 +399,73 @@ __global__ void convolveBuffers(float* d_input,
                                 int buffer_len,
                                 int filter_len,
                                 int dl_len, 
-                                int dl_loc)  {
+                                int dl_loc,
+                                int conv_len,
+                                float* debug)  {
   /// Shared memory allocation
   __shared__ int block_begin;
   block_begin =  blockIdx.x*blockDim.x;
 
-  int thread_double = threadIdx.x+BUFFER_SIZE;
   int global_idx =  block_begin+threadIdx.x;
+  int thread_double = threadIdx.x+BUFFER_SIZE;
+  
 
   __shared__ float s_h[NUM_CHANNELS][2*BUFFER_SIZE];
   __shared__ float s_x[NUM_CHANNELS][BUFFER_SIZE];
 
   for(int i = 0; i < NUM_CHANNELS; i++) {
-    s_h[i][threadIdx.x] = d_h[block_begin+threadIdx.x-BUFFER_SIZE+1+i*filter_len];
-    s_h[i][thread_double] = d_h[block_begin+thread_double-BUFFER_SIZE+1+i*filter_len];
-
-    s_x[i][threadIdx.x] = d_input[global_idx+i*buffer_len];
+    int f_idx = i*filter_len-BUFFER_SIZE+1;
+    s_h[i][threadIdx.x] = d_h[global_idx+f_idx];
+    s_h[i][thread_double] = d_h[block_begin+thread_double+f_idx];
+    s_x[i][threadIdx.x] = d_input[threadIdx.x+i*buffer_len];
   }
-   __syncthreads();
-  /// End shared memory
+   __syncthreads();  /// End shared memory allocation
   
+  // Calculate delayline indices
   int dl_idx_past = MOD(dl_loc+global_idx-buffer_len, dl_len);
   int dl_idx = MOD(dl_loc+global_idx, dl_len);
-  // Erase past buffer int the delay line
-  d_dl[dl_idx_past] = 0.f;
 
-  for(int j = 0; j < NUM_CHANNELS; j++) {    
-    float sample = 0.f;
 
-    if(global_idx<buffer_len){
+  ////////////////
+  // Go through the length of the convolution
+  //
+  // Calculate the y values via convolution of x and h
+  // of the current channel
+  //
+  // Grab the tail of the past convolution from the 
+  // delay line
+  //
+  // Save values to the dealy line
+  //
+
+  if(global_idx<conv_len) {
+    for(int j = 0; j < NUM_CHANNELS; j++) {    
+      float sample = 0.f;
+      float dl_val = d_dl[dl_idx+dl_len*j];
+
       for(int i = 0; i < buffer_len; i++) {
-        sample+= s_x[j][i]*s_h[j][BUFFER_SIZE-1+threadIdx.x-i];
-        sample+= d_dl[dl_idx+dl_len*j];
+        sample+= s_x[j][i]*s_h[j][thread_double-i-1];
+      }
+
+      // Add the sample to the delay line sample
+      sample += dl_val;
+      // Insert the convolved sample to the delay line
+      d_dl[dl_idx+dl_len*j] = sample;
+      //if(j == 0)
+      //  debug[global_idx] = sample;
+
+      // Insert the sample to the output buffer
+      if(global_idx < buffer_len){
+        // Erase past buffer in the delay line
+        d_dl[dl_idx_past+dl_len*j] = 0.f;
+        //sample += s_x[j][global_idx];
+        //d_dl[dl_idx+dl_len*j] = sample;
+
+        d_output[global_idx+j*buffer_len] = sample;
+
       }
     }
-
-    d_output[global_idx+j*buffer_len] = sample; 
-  }
+    
+    }
 }
 

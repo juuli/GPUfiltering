@@ -1,5 +1,5 @@
 #ifndef SIGNAL_BLOCK_H
-#define SINGAL_BLOCK_H
+#define SIGNAL_BLOCK_H
 
 
 /* SignalBlock class generates and analyzes signals

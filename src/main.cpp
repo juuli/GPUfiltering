@@ -16,11 +16,36 @@ void writeFile(std::string fp,
   int ir_len = raw_ir.size();
   log_msg<LOG_INFO>(L"Write File - sweep len %d, Ir len: %d") % len %ir_len;
   std::ofstream respfile(fp.c_str(),  std::fstream::out | std::fstream::trunc);
-  for(unsigned int i = 0; i < len; i++) {
-		respfile<<sweep.at(i)<<"  "<<measured.at(i)<<" "<<raw_ir.at(i)<<std::endl;
+  respfile<<sweep.size()<<" ";
+  for(int i = 0; i < len; i++) {
+		//respfile<<sweep.at(i)<<"  "<<measured.at(i)<<" "<<raw_ir.at(i)<<std::endl;
+    respfile<<raw_ir.at(i)<<" ";
 	}
 
 	respfile.close();
+}
+
+void readFile(std::string fp,
+              std::vector<float>& data) {
+  std::ifstream respfile(fp.c_str(),  std::fstream::in);
+  int size;
+  int data_size = (int)data.size();
+  respfile>>size;
+  int num = (data_size<size ? data_size : size);
+  log_msg<LOG_INFO>(L"Read File - len %d") % num;
+  for(int i = 0; i < num; i++) {
+    respfile>>data.at(i);
+  }
+  float max=0;
+  for(int i = 0; i < num; i++) {
+    if(std::abs(data.at(i))>max)
+      max = std::abs(data.at(i));
+  }
+
+  for(int i = 0; i < num; i++) {
+    data.at(i) /= max;
+  }
+
 }
 
 int main(void) {
@@ -31,8 +56,8 @@ int main(void) {
   fb.initialize();
   // Global setup
 
-  int num_inputs = 4;
-  int num_outputs = 4;
+  int num_inputs = 2;
+  int num_outputs = 2;
   EXEC_MODE mode = T_GPU;
 
   int num_taps = 4800;
@@ -46,21 +71,21 @@ int main(void) {
   fb.setFilterLen(num_taps);
   fb.setNumInAndOutputs(num_inputs,num_outputs);
   
-  fb.setFilterTaps(0,2, filter1);
-  fb.setFilterTaps(1,3, filter2);
-  fb.setMode(mode);
+  //readFile("responseL.txt", filter1);
+  //readFile("responseR.txt", filter2);
   
+  for(int i = 0; i < num_taps; i++)
+    std::cout<<filter1.at(i)<<std::endl;
 
-
-
-
-
+  fb.setFilterTaps(0,0, filter1);
+  fb.setFilterTaps(0,1, filter2);
+  //fb.setFilterTaps(1,1, filter2);
+  //fb.setFilterTaps(1,0, filter2);
+  fb.setFrameLen(256);
+  fb.setMode(mode);
 
   fb.initialize();
-  // TODO put filter data in and initialize
-
-
-
+  pa.setFramesPerBuffer(256);
   pa.initialize();
   
   for(int i = 0; i < pa.getNumberOfDevices(); i++)
@@ -70,23 +95,26 @@ int main(void) {
   // Soundflower 16 is index 5
 
   // port audio setup
-  pa.setCurrentDevice(4);
+  pa.setCurrentDevice(3);
   pa.setNumInputChannels(num_inputs);
   pa.setNumOutputChannels(num_outputs);
 
-  // this is for the sweep, one pair at a time
-  pa.setCurrentOutputChannel(0);
-  pa.setCurrentInputChannel(1);
+ 
   pa.setFs(48e3);
   
   // sweep parameters  
-  sb.setFs(48e3);
-  sb.setFBegin(1);
-  sb.setFEnd(20000);
-  sb.setLength(6);
+  
 
   if(mode == SWEEP) {
+    
     pa.output_data_ = sb.getSweep();
+     // this is for the sweep, one pair at a time
+    pa.setCurrentOutputChannel(0);
+    pa.setCurrentInputChannel(0);
+    sb.setFs(48e3);
+    sb.setFBegin(1);
+    sb.setFEnd(20000);
+    sb.setLength(6);
     CallbackStruct sweep = pa.setupSweepCallbackBlock();
     pa.setCallbackData((void*)&sweep);
     pa.setCallback(playRecCallback);
@@ -107,7 +135,7 @@ int main(void) {
   if(mode == SWEEP) {
     std::vector<float> ir = sb.getRawIr(pa.getOutputData(),
                                         pa.getInputBuffer());  
-    writeFile("response.txt", pa.getOutputData(), pa.getInputBuffer(), ir);
+    writeFile("response1.txt", pa.getOutputData(), pa.getInputBuffer(), ir);
   }
   return 0;
 }

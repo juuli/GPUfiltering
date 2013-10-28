@@ -33,9 +33,16 @@ static int convolutionCallback(const void *input_buffer, void *output_buffer,
                                const PaStreamCallbackTimeInfo* timeInfo,
                                PaStreamCallbackFlags statusFlags,
                                void *user_data ) {
-
+  //clock_t start_t;
+  //clock_t end_t;
+  //start_t = clock();  
   FilterBlock* fb = (FilterBlock*)user_data;
-  fb->convolveFrame((const float*)input_buffer, (float*)output_buffer);
+  //fb->frameThrough((const float*)input_buffer, (float*)output_buffer);
+  fb->convolveFrameGPU((const float*)input_buffer, (float*)output_buffer);
+  //end_t = clock()-start_t;
+  //log_msg<LOG_INFO>(L"Convolve kernel - time: %f ms") 
+  //                  % ((float)end_t/CLOCKS_PER_SEC*1000.f);
+  
   return paContinue;
 }
 

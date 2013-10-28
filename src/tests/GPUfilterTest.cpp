@@ -7,7 +7,7 @@
 #include "../filter_block/GPUfilter.h"
 
 #define DEVICE 0
-#define FILTER_LEN (12000)
+#define FILTER_LEN (BUFFER_LEN*2)
 
 void multiply(fftw_complex* a, fftw_complex* b, fftw_complex* c) {
   (*c)[0] = (*a)[0]*(*b)[0]-(*a)[1]*(*b)[1];
@@ -681,3 +681,33 @@ BOOST_AUTO_TEST_CASE(GPU_convolve_FFT) {
   destroyMem(accumulator);
 }
 
+BOOST_AUTO_TEST_CASE(Assign_filters) {
+  int filter_len = 1024;
+  int buffer_len = 512;
+  
+  int pad = buffer_len-1;
+  int d_f_len = filter_len+pad*2;
+  Convolver c(2, 2, filter_len, buffer_len);
+  std::vector< std::vector<float> >filters(2*2);
+
+  for(int i = 0; i < 2; i++) {
+    for(int j = 0; j < 2; j++) {
+      std::vector<float> filt(filter_len);
+      for(int k = 0; k < filter_len; k++)
+        filt.at(k) = k;
+        
+      filters.at(i*2+j) = filt;
+    }
+  }
+  c.initialize(filters);
+  float* d_filters = c.getDFilters();
+  float * h_filters = fromDevice<float>(d_f_len*2*2, d_filters, 0);
+
+  for(int i = 0; i < 4; i++) {
+    for(int j = 0; j < filter_len; j++) {
+      BOOST_CHECK_EQUAL(filters.at(i).at(j), h_filters[i*(filter_len+2*pad)+j+pad]);
+    }
+  }
+  c.cleanup();
+  free(h_filters);
+}
