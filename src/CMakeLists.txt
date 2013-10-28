@@ -17,6 +17,9 @@ SET(CUDA_PATH "/usr/local/cuda/")
 SET(CUDA_INCLUDE ${CUDA_PATH}/include/)
 SET(CUDA_LIBRARY ${CUDA_PATH}/lib/)
 
+SET(BOOST_INCLUDE "/opt/local/include/")
+SET(FFTW_INCLUDE "/Developer/fftw-3.3.2/api")
+
 SET(EXECUTABLE_OUTPUT_PATH ../bin/)
 
 #ADD INCLUDE & LINK DIRECTORIES
