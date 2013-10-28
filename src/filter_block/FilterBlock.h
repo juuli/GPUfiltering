@@ -59,7 +59,7 @@ private:
   // Filter taps for each input/output combination
   std::vector< std::vector<float> > filter_taps_;
   std::vector< std::vector<float> > delay_lines_;
-
+  
   // Private methods
   int getNumCombinations(){return this->num_inputs_*this->num_outputs_;};
   void allocateFilters(); 

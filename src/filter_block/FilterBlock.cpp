@@ -241,8 +241,8 @@ void FilterBlock::convolveFrameGPU(const float* input_frame, float* output_frame
   int num_outputs = this->getNumOutputs();
   int frame_len = this->getFrameLen();
   int d_line_len = this->getDelayLineLen();
-  // quick tryout to just delay left
-  //int delay[2] = {0, 0};
+
+  // Should be turned into fields of the class
   std::vector<float> in(num_inputs*this->getFrameLen());
   std::vector<float> out(num_outputs*this->getFrameLen());
 
