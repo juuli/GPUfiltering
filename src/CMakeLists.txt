@@ -11,7 +11,7 @@ SET(SOURCES_ ${PA_SOURCES})
 SET(PA_INCLUDES ../include/)
 SET(PA_LIBRATY ../lib/)
 
-SET(BOOST_INCLUDE "/usr/local/boost_1_53_0")
+SET(BOOST_INCLUDE "/opt/local/include/")
 SET(FFTW_INCLUDE "/Developer/fftw-3.3.2/api")
 
 SET(EXECUTABLE_OUTPUT_PATH ../bin/)
