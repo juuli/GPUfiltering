@@ -1,5 +1,6 @@
 /eclipse
-/lib/
+/lib
+/build
 /CMakeFiles
 /src/CMakeFiles
 /bin
@@ -13,6 +14,7 @@ solver_log.txt
 CMakeCache.txt
 .DS_Store
 
+*.txt
 *.swo
 *.pdf
 *.cmake
@@ -38,7 +40,6 @@ CMakeCache.txt
 *.eps
 *.tga
 *.ply
-
 *.suo
 *.slo
 *.lo
