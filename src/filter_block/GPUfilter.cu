@@ -157,9 +157,9 @@ void convolutionGPU(const float* d_x,
   dim3 block(512);
   dim3 grid((int)(conv_len/block.x)+1);
 
-  printf("Convlen %d, filter len %d , buffer len %d "
-         "Block size %d, Grid size %d \n", 
-         conv_len, len_h, len_x, block.x, grid.x);
+  //printf("Convlen %d, filter len %d , buffer len %d "
+  //       "Block size %d, Grid size %d \n", 
+  //       conv_len, len_h, len_x, block.x, grid.x);
 
   convolve<<<grid, block>>>(d_x, d_h, d_y, len_x, len_h, conv_len);
 }
@@ -174,9 +174,9 @@ void convolutionGPUpadH(const float* d_x,
   int conv_len = len_x+len_h-1;
   dim3 block(512);
   dim3 grid((int)(conv_len/block.x)+1);
-  printf("PAD Convlen %d, filter len %d , buffer len %d "
-         "Block size %d, Grid size %d \n", 
-         conv_len, len_h, len_x, block.x, grid.x);
+  //printf("PAD Convlen %d, filter len %d , buffer len %d "
+  //       "Block size %d, Grid size %d \n", 
+  //       conv_len, len_h, len_x, block.x, grid.x);
 
   convolvePadH<<<grid, block>>>(d_x, d_h+pad, d_y, len_x, len_h, conv_len);
 
@@ -191,9 +191,9 @@ void convolutionGPUshared(const float* d_x,
   int conv_len = len_x+len_h-1;
   dim3 block(BUFFER_LEN);
   dim3 grid((int)(conv_len/block.x)+1);
-  printf("PAD Convlen %d, filter len %d , buffer len %d "
-         "Block size %d, Grid size %d \n", 
-         conv_len, len_h, len_x, block.x, grid.x);
+  //printf("PAD Convlen %d, filter len %d , buffer len %d "
+  //       "Block size %d, Grid size %d \n", 
+  //       conv_len, len_h, len_x, block.x, grid.x);
 
   convolvePadHShared<BUFFER_LEN><<<grid, block>>>(d_x, d_h+pad, d_y, len_x, len_h, conv_len);
 }

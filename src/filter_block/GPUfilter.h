@@ -10,7 +10,7 @@
 #include "cudaUtils.h"
 
 #define BUFFER_LEN 512
-#define F_LEN 24000
+#define FILTER_LEN 1024*2*2*2*2*2*2*2
 #define MOD(x, y) ((x+y)%y) 
 #define INC_TO_MOD(x, y) ((x)+((y)-(MOD(x,y))))
 
@@ -23,9 +23,9 @@ public:
   Convolver() 
   : num_inputs_(1),
     num_outputs_(1),
-    filter_len_(F_LEN),
+    filter_len_(FILTER_LEN),
     buffer_len_(BUFFER_LEN),
-    conv_len_(BUFFER_LEN+F_LEN-1),
+    conv_len_(BUFFER_LEN+FILTER_LEN-1),
     d_current_in_frame_(NULL),
     d_current_out_frame_(NULL),
     d_filters_(NULL),
