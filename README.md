@@ -10,5 +10,6 @@ file, but the list is quite short:
 - Boost Libraries
 - Port Audio
 - Cuda 4.2
+- FFTW
 
 To compile, I used cmake 2.8

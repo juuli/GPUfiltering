@@ -18,7 +18,6 @@ void writeFile(std::string fp,
   std::ofstream respfile(fp.c_str(),  std::fstream::out | std::fstream::trunc);
   respfile<<sweep.size()<<" ";
   for(int i = 0; i < len; i++) {
-		//respfile<<sweep.at(i)<<"  "<<measured.at(i)<<" "<<raw_ir.at(i)<<std::endl;
     respfile<<raw_ir.at(i)<<" ";
 	}
 
@@ -54,8 +53,8 @@ int main(void) {
   SignalBlock sb;  
   FilterBlock fb;
   fb.initialize();
+  
   // Global setup
-
   int num_inputs = 2;
   int num_outputs = 2;
   EXEC_MODE mode = T_GPU;
@@ -103,8 +102,6 @@ int main(void) {
   pa.setFs(48e3);
   
   // sweep parameters  
-  
-
   if(mode == SWEEP) {
     
     pa.output_data_ = sb.getSweep();
