@@ -435,7 +435,7 @@ __global__ void convolveBuffers(float* d_input,
   // Grab the tail of the past convolution from the 
   // delay line
   //
-  // Save values to the dealy line
+  // Save values to the delay line
   //
 
   if(global_idx<conv_len) {

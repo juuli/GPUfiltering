@@ -9,7 +9,7 @@
 #include <cuda_runtime_api.h>
 #include "cudaUtils.h"
 
-#define BUFFER_LEN 512
+#define BUFFER_LEN 256
 #define FILTER_LEN 1024*2*2*2*2*2*2*2
 #define MOD(x, y) ((x+y)%y) 
 #define INC_TO_MOD(x, y) ((x)+((y)-(MOD(x,y))))

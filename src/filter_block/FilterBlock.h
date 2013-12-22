@@ -19,7 +19,7 @@
 #include "../global_includes.h"
 #include "GPUfilter.h"
 
-#define FRAME_LEN 512
+#define FRAME_LEN 256
 #define INIT_F_LEN  FRAME_LEN*4
 #define FIXED_FILTER 1
 

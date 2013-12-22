@@ -57,7 +57,7 @@ int main(void) {
   // Global setup
   int num_inputs = 2;
   int num_outputs = 2;
-  EXEC_MODE mode = T_GPU;
+  EXEC_MODE mode = SWEEP;
 
   int num_taps = 4800;
   
@@ -84,11 +84,12 @@ int main(void) {
   fb.setMode(mode);
 
   fb.initialize();
+  
   pa.setFramesPerBuffer(256);
   pa.initialize();
   
-  for(int i = 0; i < pa.getNumberOfDevices(); i++)
-    //pa.printDeviceInfo(i);
+  //for(int i = 0; i < pa.getNumberOfDevices(); i++)
+  //  pa.printDeviceInfo(i);
 
   // Currently fastrack is at index 3
   // Soundflower 16 is index 5
@@ -104,7 +105,7 @@ int main(void) {
   // sweep parameters  
   if(mode == SWEEP) {
     
-    pa.output_data_ = sb.getSweep();
+    
      // this is for the sweep, one pair at a time
     pa.setCurrentOutputChannel(0);
     pa.setCurrentInputChannel(0);
@@ -112,6 +113,7 @@ int main(void) {
     sb.setFBegin(1);
     sb.setFEnd(20000);
     sb.setLength(6);
+    pa.output_data_ = sb.getSweep();
     CallbackStruct sweep = pa.setupSweepCallbackBlock();
     pa.setCallbackData((void*)&sweep);
     pa.setCallback(playRecCallback);
@@ -125,7 +127,7 @@ int main(void) {
 
   pa.openStream();
   pa.startStream();
-  std::cin.get();
+  sleep(sb.getLength());
   pa.closeStream();
   pa.terminate();
 

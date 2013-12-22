@@ -1,5 +1,5 @@
 #include "PortAudioClass.h"
-
+#include "../signal_block/SignalBlock.h"
 //static FilterBlock* filter_block;
 
 // PortAudio error check routine
@@ -104,6 +104,33 @@ bool PortAudioClass::startStream() {
   return ret;
 }
 
+std::vector< std::string > PortAudioClass::getDeviceData(int device_idx) {
+  std::vector< std::string > ret;
+
+  PaDeviceInfo *device_info = (PaDeviceInfo*)NULL;
+
+  if(device_idx >= this->getNumberOfDevices()) {
+    log_msg<LOG_INFO>(L"PortAudioClassp::printDeviceInfo(int device_idx) - invalid device_idx %d"
+                      " number of devices %d")%device_idx %this->getNumberOfDevices();
+    return ret;
+  }
+  std::stringstream ss;
+  device_info = (PaDeviceInfo*)Pa_GetDeviceInfo(device_idx);
+  // Name
+  ss<<device_info->name;
+  ret.push_back(std::string(ss.str()));
+  ss.str(std::string());
+  // Num inputs
+  ss<<device_info->maxInputChannels;
+  ret.push_back(std::string(ss.str()));
+  ss.str(std::string());
+
+  // Num outputs
+  ss<<device_info->maxOutputChannels;
+  ret.push_back(std::string(ss.str()));
+  ss.str(std::string());
+}
+
 void PortAudioClass::printDeviceInfo(int device_idx) {
   PaDeviceInfo *device_info = (PaDeviceInfo*)NULL;
 
@@ -202,4 +229,65 @@ CallbackStruct PortAudioClass::setupSweepCallbackBlock() {
 void PortAudioClass::setCallback(PaClassCallback callback) {
   log_msg<LOG_INFO>(L"PortAudioClass::setCallback");
   this->callback_ = callback;
+}
+
+std::vector<float> PortAudioClass::measureIR(int device_idx,
+                                             int input_channel,
+                                             int output_channel,
+                                             float sweep_len,
+                                             int num_measurements,
+                                             int start_hz,
+                                             int end_hz) {
+
+  std::vector<float> ret; 
+  std::vector<float> temp;
+
+  int max_chan = input_channel > output_channel ? input_channel : output_channel;
+  max_chan = 2 > max_chan ? 2 : max_chan;
+  //std::cout<<"Max channels: "<<max_chan<<std::endl;
+  SignalBlock sb;
+
+  
+  this->initialize();
+  this->setCurrentDevice(device_idx);
+  this->setFramesPerBuffer(256);
+  this->setNumInputChannels(max_chan);
+  this->setNumOutputChannels(max_chan);
+  this->setCurrentOutputChannel(input_channel);
+  this->setCurrentInputChannel(output_channel);
+  
+  sb.setFs(48e3);
+  sb.setFBegin(start_hz);
+  sb.setFEnd(end_hz);
+  sb.setLength(sweep_len);
+  
+
+  
+  for(int i = 0; i < num_measurements; i++) {
+  this->output_data_ = sb.getSweep();
+  CallbackStruct sweep = this->setupSweepCallbackBlock();
+  this->setCallbackData((void*)&sweep);
+  this->setCallback(playRecCallback);
+  
+
+  this->openStream();
+  this->startStream();
+  sleep(sb.getLength()+1);
+  this->closeStream();
+  
+  temp = sb.getRawIr(this->getOutputData(),
+                    this->getInputBuffer());
+
+  ret.resize(temp.size(), 0.f);
+  for(int j = 0; j < temp.size(); j++) {
+    ret.at(j) += temp.at(j); 
+  }
+  }
+
+  for(int j = 0; j < temp.size(); j++) {
+    ret.at(j) /= num_measurements; 
+  }
+
+  this->terminate();
+  return ret;
 }

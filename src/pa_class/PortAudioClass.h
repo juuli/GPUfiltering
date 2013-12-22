@@ -4,8 +4,11 @@
 #include "../global_includes.h"
 #include "../includes/portaudio.h"
 #include "../filter_block/FilterBlock.h"
+#include "../signal_block/SignalBlock.h"
+
 #include <fstream>
 #include <string>
+#include <sstream>
 
 // Error printer function
 bool paCheck(PaError err);
@@ -39,6 +42,24 @@ static int convolutionCallback(const void *input_buffer, void *output_buffer,
   FilterBlock* fb = (FilterBlock*)user_data;
   //fb->frameThrough((const float*)input_buffer, (float*)output_buffer);
   fb->convolveFrameGPU((const float*)input_buffer, (float*)output_buffer);
+  //end_t = clock()-start_t;
+  //log_msg<LOG_INFO>(L"Convolve kernel - time: %f ms") 
+  //                  % ((float)end_t/CLOCKS_PER_SEC*1000.f);
+  
+  return paContinue;
+}
+
+static int throughCallback(const void *input_buffer, void *output_buffer,
+                               unsigned long frames_per_buffer,
+                               const PaStreamCallbackTimeInfo* timeInfo,
+                               PaStreamCallbackFlags statusFlags,
+                               void *user_data ) {
+  //clock_t start_t;
+  //clock_t end_t;
+  //start_t = clock();  
+  FilterBlock* fb = (FilterBlock*)user_data;
+  fb->frameThrough((const float*)input_buffer, (float*)output_buffer);
+  //fb->convolveFrameGPU((const float*)input_buffer, (float*)output_buffer);
   //end_t = clock()-start_t;
   //log_msg<LOG_INFO>(L"Convolve kernel - time: %f ms") 
   //                  % ((float)end_t/CLOCKS_PER_SEC*1000.f);
@@ -232,7 +253,9 @@ public:
   const std::vector<float>& getOutputData() {return this->output_data_;};
   const std::vector<float>& getInputBuffer() {return this->input_buffer_;};
   const std::vector<float>& getOutputBuffer() {return this->output_buffer_;};
+  
   void printInfoToLog();
+  std::vector< std::string > getDeviceData(int device_idx);
   void printDeviceInfo(int device_num);
   void setInitialized(bool initialized) {this->initialized_ = initialized;};
   bool isInitialized() {return this->initialized_;};
@@ -248,10 +271,13 @@ public:
   void setCurrentDevice(int device);
   void setFs(int fs) {this->fs_ = fs;};
   void setFramesPerBuffer(unsigned long fpb);
+
   void setNumInputChannels(int num_channels)
     {this->num_input_channels_ = num_channels;};
+  
   void setNumOutputChannels(int num_channels)
     {this->num_output_channels_ = num_channels;};
+  
   void setCurrentInputChannel(int channel_idx);
   void setCurrentOutputChannel(int channel_idx);
   void setCallback(PaClassCallback callback);
@@ -261,6 +287,14 @@ public:
   bool startStream();
   CallbackStruct setupSweepCallbackBlock();
   bool setupFilterCallback();
+
+  std::vector<float> measureIR(int device_idx,
+                               int intput_channel,
+                               int output_channel,
+                               float sweep_len,
+                               int num_measurements,
+                               int start_hz,
+                               int end_hz);
 };
 
 

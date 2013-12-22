@@ -1,6 +1,7 @@
 /eclipse
 /lib
 /build
+/build_32
 /CMakeFiles
 /src/CMakeFiles
 /bin
